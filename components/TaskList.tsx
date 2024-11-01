@@ -13,6 +13,7 @@ import DraggableFlatList, {
 } from 'react-native-draggable-flatlist';
 import {runOnJS} from 'react-native-reanimated';
 import TaskItem from './TaskItem';
+import { SortBar } from './SortBar';
 
 interface Task {
   id: string;
@@ -23,6 +24,8 @@ interface Task {
 const TaskList: React.FC = () => {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [newTask, setNewTask] = useState<string>('');
+  const [sortType, setSortType] = useState<'all' | 'completed'>('all');
+  const [sortedTasks, setSortedTasks] = useState<Task[]>([]);
 
   useEffect(() => {
     const loadTasks = async () => {
@@ -61,6 +64,14 @@ const TaskList: React.FC = () => {
       saveTasks();
     };
   }, [tasks]);
+
+  useEffect(() => {
+    if (sortType === 'completed' && tasks.length > 0) {
+      setSortedTasks(tasks.filter(task => task.completed));
+    } else {
+      setSortedTasks(tasks);
+    }
+  }, [tasks, sortType]);
 
   const addTask = useCallback(() => {
     if (newTask.trim()) {
@@ -111,9 +122,12 @@ const TaskList: React.FC = () => {
     [tasks, updateTask, deleteTask, toggleTaskComplete],
   );
 
+  const styles = Platform.OS === 'ios' ? {flex: 1} : {};
+
   return (
-    <View style={{flex: 1}}>
+    <View style={styles}>
       <View style={{padding: 10}}>
+        <SortBar sortType={sortType} setSortType={setSortType} />
         <TextInput
           placeholder="Добавить задачу"
           value={newTask}
@@ -129,7 +143,7 @@ const TaskList: React.FC = () => {
         <Button title="Добавить" onPress={addTask} />
       </View>
       <DraggableFlatList
-        data={tasks}
+        data={sortedTasks}
         renderItem={renderItem}
         keyExtractor={item => item.id}
         onDragEnd={handleDragEnd}
